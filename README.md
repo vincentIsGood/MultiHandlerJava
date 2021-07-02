@@ -19,6 +19,7 @@ You can enable beta features by simply typing `java -jar multihandler-java-v2.0.
 
 ### Help
 You may type `help` to find commands which you can use.
+Since the application supports CTRL+Z as mentioned, you need to run `trap '' TSTP` to disable `SIGTSTP` which is used for jobs control in Linux. To re-enable it, you need to run `trap - TSTP`.
 
 ## Compilation
 Even though there are a few .bat files, linux commands are still used.
