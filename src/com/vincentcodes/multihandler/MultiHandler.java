@@ -271,7 +271,8 @@ public class MultiHandler {
 
     public void closeAll() throws IOException{
         done = true;
-        ((UnblockedTerminalReader)consoleReader).close();
+        if(consoleReader instanceof UnblockedTerminalReader)
+            ((UnblockedTerminalReader)consoleReader).close();
         server.close();
         for(ConnectionThread thread : threads){
             thread.close();
