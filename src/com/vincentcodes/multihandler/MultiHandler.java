@@ -6,10 +6,12 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.vincentcodes.io.BasicTerminalLineReader;
 import com.vincentcodes.io.ConsoleReader;
 import com.vincentcodes.logger.Logger;
 import com.vincentcodes.multihandler.util.Signal;
 import com.vincentcodes.multihandler.util.SignalUtils;
+import com.vincentcodes.terminal.UnblockedTerminalReader;
 
 // ExecutorService is not used. It makes thing harder
 /**
@@ -20,15 +22,18 @@ import com.vincentcodes.multihandler.util.SignalUtils;
  */
 public class MultiHandler {
     public static Logger LOGGER = new Logger();
+    public static boolean BETA_ENABLED = false;
+
     private ServerSocket server;
-    private ConsoleReader consoleReader;
+    private BasicTerminalLineReader consoleReader;
     private int port;
 
     private List<ConnectionThread> threads;
     private volatile ConnectionThread currentThread;
     private boolean receiveConnections = true;
-    private volatile boolean done = false;
-    private volatile boolean inputRequested = false; // higher priority
+    private boolean done = false;
+    private boolean inputRequested = false; // higher priority
+    private int caretResetTime = 150;
 
     public MultiHandler() throws IOException{
         this(4444);
@@ -37,7 +42,13 @@ public class MultiHandler {
     public MultiHandler(int port) throws IOException{
         this.port = port;
         server = new ServerSocket(port);
-        consoleReader = new ConsoleReader(System.in);
+        if(BETA_ENABLED){
+            LOGGER.warn("Enabling beta features, bugs may present inside the application");
+            LOGGER.warn("For example, the starts from STX if a program takes time to process");
+            LOGGER.warn("(pressing enter a couple of times MAY fix it)");
+            consoleReader = new UnblockedTerminalReader();
+        }else
+            consoleReader = new ConsoleReader(System.in);
         threads = new ArrayList<>();
     }
     
@@ -52,6 +63,8 @@ public class MultiHandler {
                     Thread.sleep(100);
                     continue;
                 }
+                if(server.isClosed())
+                    continue;
                 socket = server.accept();
                 System.out.println();
                 ConnectionThread thread = new ConnectionThread(Integer.toString(threads.size()), socket);
@@ -78,23 +91,30 @@ public class MultiHandler {
                     if(inputRequested) continue;
                     if(currentThread != null){
                         try{
-                            String line = consoleReader.peakLine();
+                            String line = consoleReader.peekLine();
                             if(line == null) continue;
 
                             consoleReader.readLine(); // remove the line from buffer
                             if(!handleSystemCommand(line)){
                                 currentThread.send(line + "\n");
+                                if(BETA_ENABLED){
+                                    Thread.sleep(caretResetTime);
+                                    ((UnblockedTerminalReader)consoleReader).resetCaretStartPos();
+                                }
                             }
-                        }catch(IOException e){
+                        }catch(IOException | InterruptedException e){
                             e.printStackTrace();
                             bgCurrentConnection();
                         }
                     }else{
                         if(!printed){
                             System.out.print("multihandler> ");
+                            if(BETA_ENABLED){
+                                ((UnblockedTerminalReader)consoleReader).resetCaretStartPos();
+                            }
                             printed = true;
                         }
-                        String line = consoleReader.peakLine();
+                        String line = consoleReader.peekLine();
                         if(line == null) continue;
 
                         consoleReader.readLine(); // remove the line from buffer
@@ -116,7 +136,6 @@ public class MultiHandler {
         String command = splited[0];
         switch(command){
             case "sysexit": 
-                done = true;
                 try{ closeAll(); }catch(Exception e){}
                 return true;
             case "sessions":
@@ -161,10 +180,22 @@ public class MultiHandler {
                     e.printStackTrace();
                 }
                 return true;
+            case "caretresettime":
+                if(splited.length > 1){
+                    int time = Integer.parseInt(splited[1]);
+                    if(time >= 0){
+                        LOGGER.log("Setting caret reset time from " + caretResetTime + " -> " + time);
+                        caretResetTime = time;
+                    }
+                }else{
+                    LOGGER.err("time is needed as an argument");
+                }
+                return true;
             case "help":
                 LOGGER.log("sysexit");
                 LOGGER.log("sessions [<thread_num>]");
                 LOGGER.log("togglereceive");
+                LOGGER.log("caretresettime <ms>");
                 return true;
         }
         return false;
@@ -190,6 +221,9 @@ public class MultiHandler {
                 String answer = getImmediateUserInput();
                 if(answer.toLowerCase().trim().equals("y")){
                     System.out.println(sig.toString() + " received, quitting");
+                    try{
+                        closeAll();
+                    }catch(IOException e){}
                     System.exit(-1);
                 }
             }
@@ -222,7 +256,7 @@ public class MultiHandler {
     public String getImmediateUserInput(){
         String answer = null;
         requestInput();
-        while((answer = consoleReader.peakLine()) == null);
+        while((answer = consoleReader.peekLine()) == null);
         answer = consoleReader.readLine();
         cancelInputRequest();
         return answer;
@@ -236,6 +270,8 @@ public class MultiHandler {
     }
 
     public void closeAll() throws IOException{
+        done = true;
+        ((UnblockedTerminalReader)consoleReader).close();
         server.close();
         for(ConnectionThread thread : threads){
             thread.close();

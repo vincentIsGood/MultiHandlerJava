@@ -12,10 +12,17 @@ public class Main{
         int port = 4444;
         if(args.length > 0){
             try{
-                port = Integer.parseInt(args[0]);
+                switch(args.length){
+                    case 1:
+                        port = Integer.parseInt(args[0]);
+                        if(args.length == 1) break;
+                    case 2:
+                        MultiHandler.BETA_ENABLED = Boolean.parseBoolean(args[1]);
+                        if(args.length == 2) break;
+                }
             }catch(NumberFormatException e){
                 MultiHandler.LOGGER.err("'" + args[0] + "' is not a valid port number");
-                MultiHandler.LOGGER.warn("Usage: java -jar multihandler-java-vx.x.x.jar [<port>]");
+                MultiHandler.LOGGER.warn("Usage: java -jar multihandler-java-vx.x.x.jar [<port>] [<beta - bool>]");
                 System.exit(-1);
             }
         }

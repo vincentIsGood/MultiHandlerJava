@@ -22,7 +22,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * </pre>
  * @see https://community.oracle.com/tech/developers/discussion/1258631/nonblocking-system-in-read
  */
-public class ConsoleReader {
+public class ConsoleReader implements BasicTerminalLineReader{
     // BlockingQueue is thread safe
     private final BlockingQueue<String> lines = new LinkedBlockingQueue<String>();
     // private final LinkedList<String> lines = new LinkedList<String>();
@@ -71,6 +71,7 @@ public class ConsoleReader {
      * Returns the next line and removes it from the buffer
      * @return null if no input received or the thread is interrupred
      */
+    @Override
     public String readLine() {
         try {
             return closed && lines.size() == 0? null : lines.take();
@@ -83,13 +84,15 @@ public class ConsoleReader {
      * Peek next line
      * @return the input line
      */
-    public String peakLine() {
+    @Override
+    public String peekLine() {
         return closed && lines.size() == 0? null : lines.peek();
     }
 
     /** 
      * Closes this reader (by interrupting the background reader thread).
      */
+    @Override
     public void close() {
         if(backgroundReaderThread != null){ 
             backgroundReaderThread.interrupt();

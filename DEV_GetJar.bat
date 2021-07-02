@@ -1,16 +1,15 @@
 @echo off
 
-set jarname=multihandler-java-v1.1.0
+set jarname=multihandler-java-v2.0.0-beta
 set libraries=../com/*
 set structure=com/vincentcodes/*
 
-cp -r lib/com/ .
 
 :: with Manifest and library files
+cp -r lib/com/ .
 cd classes
 jar -cvfm %jarname%.jar Manifest.txt %libraries% %structure%
 mv %jarname%.jar ..
-
 rm -r ../com/
 
 :: with Manifest, but without lib files

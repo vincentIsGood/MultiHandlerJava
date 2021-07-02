@@ -1,3 +1,16 @@
 There are several versions of signals
 
 https://stackoverflow.com/questions/60158720/how-to-use-jdk-internal-misc-signal-in-java11
+
+
+Terminals keypress listening
+On windows, use key_event_record
+https://docs.microsoft.com/en-us/windows/console/reading-input-buffer-events
+https://stackoverflow.com/questions/31963835/how-to-read-terminals-input-buffer-immediately-after-keypress
+
+Sending CTRL keys to remote shell.
+CTRL-C keystroke is captured by the terminal and translated into a kill signal sent to the process.
+You will never achieve this by sending CTRL-C over a connection
+
+https://stackoverflow.com/questions/6301840/how-to-stop-a-screen-process-in-linux/6301852
+https://donsnotes.com/tech/charsets/ascii.html
