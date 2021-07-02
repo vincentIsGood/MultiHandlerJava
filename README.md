@@ -1,6 +1,8 @@
 # MultiHandlerJava
 This is a MultiHandler project inspired by metasploit framework's multihandler module which is written in ruby. I figured I could create one in Java. The code is not really that neat and tidy. Hope anyone who use this find this application useful.
 
+Since this is Tested on Kali linux, the erase character defaults to is ^H (0x8). On Ubuntu, it should be ^? (0x7F, or 127)
+
 ### Beta Features
 I created a beta build for the project. The beta is available inside the `builds/` directory. It features an improved terminal input string buffering which allows the use of arrow keys. The implemented function of the arrow keys are as follows:
 

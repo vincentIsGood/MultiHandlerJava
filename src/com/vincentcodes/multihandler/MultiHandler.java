@@ -1,6 +1,7 @@
 package com.vincentcodes.multihandler;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import com.vincentcodes.logger.Logger;
 import com.vincentcodes.multihandler.util.Signal;
 import com.vincentcodes.multihandler.util.SignalUtils;
 import com.vincentcodes.terminal.UnblockedTerminalReader;
+import com.vincentcodes.terminal.keyevent.BackspaceKeyPressed;
 
 // ExecutorService is not used. It makes thing harder
 /**
@@ -60,7 +62,7 @@ public class MultiHandler {
         while(!done){
             try{
                 if(!receiveConnections){
-                    Thread.sleep(100);
+                    wrappedSleep(100);
                     continue;
                 }
                 if(server.isClosed())
@@ -71,7 +73,7 @@ public class MultiHandler {
                 thread.start();
                 threads.add(thread);
                 currentThread = thread;
-            }catch(IOException | InterruptedException e){
+            }catch(IOException e){
                 if(!e.getMessage().contains("Socket closed"))
                     e.printStackTrace();
             }
@@ -85,9 +87,7 @@ public class MultiHandler {
             public void run(){
                 boolean printed = false;
                 while(!done){
-                    try{
-                        Thread.sleep(100);
-                    }catch(InterruptedException ignored){}
+                    wrappedSleep(100);
                     if(inputRequested) continue;
                     if(currentThread != null){
                         try{
@@ -98,11 +98,11 @@ public class MultiHandler {
                             if(!handleSystemCommand(line)){
                                 currentThread.send(line + "\n");
                                 if(BETA_ENABLED){
-                                    Thread.sleep(caretResetTime);
+                                    wrappedSleep(caretResetTime);
                                     ((UnblockedTerminalReader)consoleReader).resetCaretStartPos();
                                 }
                             }
-                        }catch(IOException | InterruptedException e){
+                        }catch(IOException e){
                             e.printStackTrace();
                             bgCurrentConnection();
                         }
@@ -191,11 +191,23 @@ public class MultiHandler {
                     LOGGER.err("time is needed as an argument");
                 }
                 return true;
+            case "seterasechar":
+                if(splited.length > 1){
+                    int eraseChar = Integer.parseInt(splited[1]);
+                    if(eraseChar >= 0){
+                        LOGGER.log("Setting erase char to from to " + eraseChar);
+                        BackspaceKeyPressed.setBackSpaceKey((char)eraseChar);
+                    }
+                }else{
+                    LOGGER.err("A number is needed as an argument");
+                }
+                return true;
             case "help":
                 LOGGER.log("sysexit");
                 LOGGER.log("sessions [<thread_num>]");
                 LOGGER.log("togglereceive");
                 LOGGER.log("caretresettime <ms>");
+                LOGGER.log("seterasechar <8 / 127>");
                 return true;
         }
         return false;
@@ -221,9 +233,7 @@ public class MultiHandler {
                 String answer = getImmediateUserInput();
                 if(answer.toLowerCase().trim().equals("y")){
                     System.out.println(sig.toString() + " received, quitting");
-                    try{
-                        closeAll();
-                    }catch(IOException e){}
+                    closeAll();
                     System.exit(-1);
                 }
             }
@@ -269,13 +279,23 @@ public class MultiHandler {
         inputRequested = false;
     }
 
-    public void closeAll() throws IOException{
-        done = true;
-        if(consoleReader instanceof UnblockedTerminalReader)
-            ((UnblockedTerminalReader)consoleReader).close();
-        server.close();
-        for(ConnectionThread thread : threads){
-            thread.close();
+    public void closeAll(){
+        try{
+            done = true;
+            if(consoleReader instanceof UnblockedTerminalReader)
+                ((UnblockedTerminalReader)consoleReader).close();
+            server.close();
+            for(ConnectionThread thread : threads){
+                thread.close();
+            }
+        }catch(IOException e){
+            throw new UncheckedIOException(e);
         }
+    }
+
+    private void wrappedSleep(int ms){
+        try{
+            Thread.sleep(ms);
+        }catch(InterruptedException ignored){}
     }
 }

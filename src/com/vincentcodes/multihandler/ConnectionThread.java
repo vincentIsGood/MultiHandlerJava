@@ -51,7 +51,7 @@ public class ConnectionThread extends Thread{
             }
         }catch(IOException e){
             connection.close();
-            throw e;
+            throw new IOException("Connection is possibly closed", e);
         }
     }
 

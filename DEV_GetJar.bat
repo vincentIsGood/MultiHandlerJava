@@ -1,6 +1,6 @@
 @echo off
 
-set jarname=multihandler-java-v2.0.0-beta
+set jarname=multihandler-java-v2.0.1-beta
 set libraries=../com/*
 set structure=com/vincentcodes/*
 

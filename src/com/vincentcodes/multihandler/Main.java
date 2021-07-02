@@ -13,12 +13,10 @@ public class Main{
         if(args.length > 0){
             try{
                 switch(args.length){
-                    case 1:
-                        port = Integer.parseInt(args[0]);
-                        if(args.length == 1) break;
                     case 2:
                         MultiHandler.BETA_ENABLED = Boolean.parseBoolean(args[1]);
-                        if(args.length == 2) break;
+                    case 1:
+                        port = Integer.parseInt(args[0]);
                 }
             }catch(NumberFormatException e){
                 MultiHandler.LOGGER.err("'" + args[0] + "' is not a valid port number");
